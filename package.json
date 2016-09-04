@@ -1,0 +1,29 @@
+{
+  "name": "edison_onboard",
+  "version": "1.0.0",
+  "main": "eb_entry.js",
+  "scripts": {
+    "test": "node eb_entry.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stitchcula/edison_onboard.git"
+  },
+  "keywords": [
+    "node",
+    "edison",
+    "iot"
+  ],
+  "author": "Stitch Cula",
+  "license": "MPL-2.0",
+  "bugs": {
+    "url": "https://github.com/stitchcula/edison_onboard/issues"
+  },
+  "homepage": "https://github.com/stitchcula/edison_onboard#readme",
+  "dependencies": {
+    "babel-core": "^6.14.0",
+    "babel-preset-es2015-node4": "^0.3.0",
+    "babel-preset-stage-3": "^6.11.0",
+    "mqtt": "^1.14.1"
+  }
+}
