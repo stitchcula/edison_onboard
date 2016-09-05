@@ -10,8 +10,7 @@ var g_mux=true;
 var g_nodes_down=[]
     ,g_nodes_up=[];
 
-
-(async function () {
+const main=async()=>{
     console.log('MRAA Version: ' + m.getVersion());
 
     const u = new m.Uart(0)
@@ -21,12 +20,15 @@ var g_nodes_down=[]
     u.setTimeout(20,20);
 
     const j=schedule.scheduleJob('*/2 * * * * *',()=>{
-        console.log("j:"+new Date().getTime())
         node_loop(u)
     })
-})()
+}
+main()
+
+/********/
 
 async function node_loop(u) {
+    console.log("j:"+new Date().getTime())
     if(!(await redis.get("node_loop_enable")))
         if(g_mux){
             g_mux=false
@@ -91,4 +93,17 @@ async function smart_config(u){
 
 function delay(t){
     return new Promise(r=>setTimeout(r,t))
+}
+
+function cutEnd(u){
+    function cutEndFinder(a,b,c,d,i){
+        //console.log("d:"+d+",i:"+i)
+        if(a=="S"&&b=="M"&&c=="T"&&d=="H")
+            return true
+        else if(i>1200)
+            return false
+        else
+            return cutEndFinder(b,c,d,u.readStr(1),i+1)
+    }
+    return cutEndFinder("0","0","0",u.readStr(1),0)
 }
