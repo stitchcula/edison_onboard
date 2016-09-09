@@ -17,7 +17,7 @@ const main=async()=>{
     u.setBaudRate(115200);
     u.setMode(8, 0, 1);
     u.setFlowcontrol(false, false);
-    u.setTimeout(20,20);
+    u.setTimeout(40,20,0);
 
     const j=schedule.scheduleJob('*/2 * * * * *',()=>{
         node_loop(u)
@@ -28,13 +28,13 @@ main()
 /********/
 
 async function node_loop(u) {
-    console.log("j:"+new Date().getTime())
     if(!(await redis.get("node_loop_enable")))
         if(g_mux){
             g_mux=false
             return await smart_config(u)
         }else
             return
+    console.log("j:"+new Date().getTime())
     g_nodes_down=JSON.parse(await redis.get("nodes_down_cache"))
     g_nodes_up=[]
     for(var i=0;i<g_nodes_down.length;i++){
@@ -48,8 +48,8 @@ async function node_loop(u) {
         g_nodes_up[i].msg_c=u.readStr(32)
         await delay(60)
     }
-    await redis.set("nodes_down_cache")
-    await redis.set("nodes_up_cache")
+    await redis.set("nodes_down_cache",JSON.stringify(g_nodes_down))
+    await redis.set("nodes_up_cache",JSON.stringify(g_nodes_up))
 }
 
 async function smart_config(u){
@@ -77,6 +77,9 @@ async function smart_config(u){
         await delay(500);
         while(true) {
             var res = u.readStr(32)
+            //todo
+            var arr=res.split("|")
+            LinkWifi(arr[0],arr[1])
             console.log(res)
             if(res!=null)
                 break
@@ -84,11 +87,12 @@ async function smart_config(u){
                 delay(500)
         }
         await delay(200);
+        pin.write(0)
+        power.write(0);
+    }else{
+        pin.write(0)
+        power.write(0);
     }
-
-    pin.write(0)
-    power.write(0);
-
 }
 
 function delay(t){
@@ -106,4 +110,9 @@ function cutEnd(u){
             return cutEndFinder(b,c,d,u.readStr(1),i+1)
     }
     return cutEndFinder("0","0","0",u.readStr(1),0)
+}
+
+function LinkWifi(ssid, pwd) {
+    console.log("ssid:"+ssid)
+    console.log("pwd:"+pwd)
 }
