@@ -4,11 +4,13 @@
 
 import mqtt from 'mqtt'
 import schedule from 'node-schedule'
+import request from 'co-request'
 var redis=require('co-redis')(require('redis').createClient(process.env['REDIS_PORT'], process.env['REDIS_HOST']))
 
-var mqtt_mode="remote"
-var mqtt_cli=[start_mqtt_remote('mqtt://shibeta.com:8005'),
-                start_mqtt_local('mqtt://localhost')];
+var device_token=null
+var device_uin=null
+var mqtt_mode="local"
+var mqtt_cli=[0,start_mqtt_local('mqtt://localhost')];
 (async ()=>{
     var nodes_down_init=[]
     for(var i=0;i<8;i++)
@@ -17,6 +19,17 @@ var mqtt_cli=[start_mqtt_remote('mqtt://shibeta.com:8005'),
 })()
 
 const j=schedule.scheduleJob('*/2 * * * * *',async ()=>{
+    if(!device_token){
+        var res=request("http://shibeta.com:8007/user/bind?device_id="+null)
+        //todo:get edison's id
+        res=JSON.parse(res.body)
+        if(!res.err_code) {
+            device_token = res.result.token
+            device_uin = res.result.uin
+            mqtt_mode="remote"
+            mqtt_cli[0] = start_mqtt_remote('mqtt://shibeta.com:8005')
+        }
+    }
     var data=await redis.get("nodes_up_cache")
     if(!data)
         return 0
