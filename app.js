@@ -8,6 +8,7 @@ import request from 'co-request'
 var redis=require('co-redis')(require('redis').createClient(process.env['REDIS_PORT'], process.env['REDIS_HOST']))
 
 var device_token=null
+const device_id="FZEDA447D00D1B501"
 var device_uin=null
 var mqtt_mode="local"
 var mqtt_cli=[0,start_mqtt_local('mqtt://localhost')];
@@ -20,8 +21,7 @@ var mqtt_cli=[0,start_mqtt_local('mqtt://localhost')];
 
 const j=schedule.scheduleJob('*/2 * * * * *',async ()=>{
     if(!device_token){
-        var res=request("http://shibeta.com:8007/user/bind?device_id="+null)
-        //todo:get edison's id
+        var res=request("http://shibeta.com:8007/user/bind?device_id="+device_id)
         res=JSON.parse(res.body)
         if(!res.err_code) {
             device_token = res.result.token
@@ -38,7 +38,7 @@ const j=schedule.scheduleJob('*/2 * * * * *',async ()=>{
         if(data[i].msg_c.length>2) {
             var mqtt_i = mqtt_mode == "remote" ? 0 : 0//todo:?0:1
             data[i].msg_c=JSON.parse(data[i].msg_c)
-            mqtt_cli[mqtt_i].publish('$SMTH/test',JSON.stringify({
+            mqtt_cli[mqtt_i].publish('$SMTH/'+device_id,JSON.stringify({
                 node_id:data[i].node_id,
                 node_type:data[i].msg_c.node_type,
                 msg_type:data[i].msg_c.msg_type,
@@ -51,15 +51,14 @@ const j=schedule.scheduleJob('*/2 * * * * *',async ()=>{
 
 function start_mqtt_remote(url) {
     var cli=mqtt.connect(url,{
-        username:"test",//edison_id
-        password:"test"//token
+        username:JSON.stringify({device_id}),//edison_id
+        password:device_token//token
     })
     cli.on('connect',async (c)=>{
         mqtt_mode="remote"
         await redis.set("node_loop_enable",true)
-        cli.subscribe('$SMTH/test');
-        cli.subscribe('$SMTH/test/NOTICE');
-        cli.publish('$SMTH/test',JSON.stringify({
+        cli.subscribe('$SMTH/'+device_uin);
+        cli.publish('$SMTH/'+device_id,JSON.stringify({
             node_id:"46585654",
             node_type:"LIGHT",
             msg_type:"NOTICE",
