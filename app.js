@@ -67,7 +67,7 @@ function start_mqtt_remote(url) {
         }));
     })
     cli.on('message',(topic,message)=>{
-        console.log(topic);
+        console.log(topic,message);
     })
     cli.on('offline',async ()=> {
         if(await redis.get("node_loop_enable"))
