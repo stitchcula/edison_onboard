@@ -28,7 +28,8 @@ main()
 /********/
 
 async function node_loop(u) {
-    if(!(await redis.get("node_loop_enable")))
+    var node_loop_enable=await redis.get("node_loop_enable")
+    if(!node_loop_enable||node_loop_enable!="true")
         if(g_mux){
             g_mux=false
             return await smart_config(u)
@@ -79,8 +80,7 @@ async function smart_config(u){
             var res = u.readStr(32)
             //todo
             var arr=res.split("|")
-            LinkWifi(arr[0],arr[1])
-            console.log(res)
+            await LinkWifi(arr[0],arr[1])
             if(res!=null)
                 break
             else
@@ -112,7 +112,11 @@ function cutEnd(u){
     return cutEndFinder("0","0","0",u.readStr(1),0)
 }
 
+var exec = require('child_process').exec;
 function LinkWifi(ssid, pwd) {
     console.log("ssid:"+ssid)
     console.log("pwd:"+pwd)
+    return function(callback){
+       exec("/ext/pj/smth/configure_edison.sh --wifi "+ssid+" "+pwd,callback)
+    }
 }

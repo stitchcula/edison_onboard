@@ -16,12 +16,12 @@ var mqtt_cli=[0,start_mqtt_local('mqtt://localhost')];
     var nodes_down_init=[]
     for(var i=0;i<8;i++)
         nodes_down_init[i]={node_id:0,msg_c:""}
-    await redis.set("nodes_down_cache",nodes_down_init)
+    await redis.set("nodes_down_cache",JSON.stringify(nodes_down_init))
 })()
 
 const j=schedule.scheduleJob('*/2 * * * * *',async ()=>{
     if(!device_token){
-        var res=request("http://shibeta.com:8007/user/bind?device_id="+device_id)
+        var res=await request("http://shibeta.com:8007/user/bind?device_id="+device_id)
         res=JSON.parse(res.body)
         if(!res.err_code) {
             device_token = res.result.token
@@ -67,7 +67,7 @@ function start_mqtt_remote(url) {
         }));
     })
     cli.on('message',(topic,message)=>{
-        console.log(topic,message);
+        console.log(topic,message.toString());
     })
     cli.on('offline',async ()=> {
         if(await redis.get("node_loop_enable"))
