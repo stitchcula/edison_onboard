@@ -5,6 +5,7 @@
 import schedule from 'node-schedule'
 import m  from 'mraa'
 var redis=require('co-redis')(require('redis').createClient(process.env['REDIS_PORT'], process.env['REDIS_HOST']))
+var exec = require('child_process').exec;
 
 var g_mux=true;
 var g_nodes_down=[]
@@ -22,6 +23,7 @@ const main=async()=>{
     const j=schedule.scheduleJob('*/2 * * * * *',()=>{
         node_loop(u)
     })
+
 }
 main()
 
@@ -76,17 +78,18 @@ async function smart_config(u){
         await delay(200);
         u.writeStr("sniff\r");
         await delay(500);
+        var res
         while(true) {
-            var res = u.readStr(32)
+            res = u.readStr(32)
             //todo
-            var arr=res.split("|")
-            await LinkWifi(arr[0],arr[1])
             if(res!=null)
                 break
             else
                 delay(500)
         }
-        await delay(200);
+        var arr=res.split("|")
+        await LinkWifi(arr[0],arr[1])
+        await delay(400);
         pin.write(0)
         power.write(0);
     }else{
@@ -112,11 +115,14 @@ function cutEnd(u){
     return cutEndFinder("0","0","0",u.readStr(1),0)
 }
 
-var exec = require('child_process').exec;
 function LinkWifi(ssid, pwd) {
     console.log("ssid:"+ssid)
     console.log("pwd:"+pwd)
     return function(callback){
-       exec("/ext/pj/smth/configure_edison.sh --wifi "+ssid+" "+pwd,callback)
+       exec("/ext/pj/smth/configure_edison.sh --wifi "+ssid+" "+pwd,function (e, i, o) {
+           console.log("sh did")
+           console.log(e+i+o)
+           callback(e,i)
+       })
     }
 }
