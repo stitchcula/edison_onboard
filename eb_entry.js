@@ -7,7 +7,7 @@
 var be=new Date().getTime()
 
 require('babel-core/register')({
-    presets: ['es2015-node6','stage-3']
+    presets: ['es2015-node4','stage-3']
 });
 
 require('./app.js')

@@ -26,16 +26,18 @@ const j=schedule.scheduleJob('*/2 * * * * *',async ()=>{
         if(!res.err_code) {
             device_token = res.result.token
             device_uin = res.result.uin
+            await redis.set("device_token",device_token)
+            await redis.set("device_uin",device_uin)
             mqtt_mode="remote"
             mqtt_cli[0] = start_mqtt_remote('mqtt://shibeta.com:8005')
         }
     }
-    var data=await redis.get("nodes_up_cache")
+    var data=await redis.get("nodes_up_cache")//length=8,{node_id,msg_c;{node_type,msg_type,msg_id,msg_c}}
     if(!data)
         return 0
     data=JSON.parse(data)
     for(var i=0;i<data.length;i++){
-        if(data[i].msg_c.length>2) {
+        if(data[i].msg_c.length>2) {//长度<3则为心跳包
             var mqtt_i = mqtt_mode == "remote" ? 0 : 0//todo:?0:1
             data[i].msg_c=JSON.parse(data[i].msg_c)
             mqtt_cli[mqtt_i].publish('$SMTH/'+device_id,JSON.stringify({
@@ -66,8 +68,15 @@ function start_mqtt_remote(url) {
             msg_c:"hello mqtt"
         }));
     })
-    cli.on('message',(topic,message)=>{
+    cli.on('message',async (topic,message)=>{
         console.log(topic,message.toString());
+        message=JSON.parse(message.toString())
+        var nodes_down=JSON.parse(await redis.get("nodes_down_cache"))//length=8
+        for(var i=0;i<nodes_down.length;i++)
+            if(nodes_down[i].node_id==message.node_id){
+                nodes_down[i].msg_c=message.msg_c
+            }
+        await redis.set("nodes_down_cache",JSON.stringify(nodes_down))
     })
     cli.on('offline',async ()=> {
         if(await redis.get("node_loop_enable"))
