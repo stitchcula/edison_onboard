@@ -4,6 +4,7 @@
 
 import mqtt from 'mqtt'
 import schedule from 'node-schedule'
+import m  from 'mraa'
 import request from 'co-request'
 var redis=require('co-redis')(require('redis').createClient(process.env['REDIS_PORT'], process.env['REDIS_HOST']))
 
@@ -71,6 +72,15 @@ function start_mqtt_remote(url) {
     cli.on('message',async (topic,message)=>{
         console.log(topic,message.toString());
         message=JSON.parse(message.toString())
+        if(message.node_type=="light"){
+            var pin = new m.Gpio(7)
+            pin.dir(m.DIR_OUT)
+            if(message.msg_c="1"){
+                pin.write(1);
+            }else{
+                pin.write(0);
+            }
+        }
         var nodes_down=JSON.parse(await redis.get("nodes_down_cache"))//length=8
         for(var i=0;i<nodes_down.length;i++)
             if(nodes_down[i].node_id==message.node_id){
